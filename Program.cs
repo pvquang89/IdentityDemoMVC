@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+
+
 //Configuration Identity Services
 //AddIdentity() : phương thức dùng để cấu hình và thiết lập identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -16,11 +18,18 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireUppercase = false;           // Không cần chữ hoa
 })
 .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Configure the Application Cookie settings
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    //Mặc định nếu ko đặt giá trị LoginPath là action Login trong Account controller
+    options.LoginPath = "/Account/Login";
+});
+
 //Configure Entity Framework Core
 var connectionString = builder.Configuration.GetConnectionString("SQLServerIdentityConnection") ?? throw new InvalidOperationException("Connection string 'SQLServerIdentityConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-
 
 
 

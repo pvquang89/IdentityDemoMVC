@@ -1,4 +1,5 @@
 ﻿using IdentityDemo.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -51,6 +52,64 @@ namespace IdentityDemo.Controllers
                 }
             }
             return View(model);
+        }
+
+
+        [HttpGet]
+        public IActionResult Login(string? ReturnUrl = null)
+        {
+            ViewData["ReturnUrl"]= ReturnUrl;
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        //ReturnUrl được nhận từ form truyền vào đây
+        public async Task<IActionResult> Login(LoginViewModel model, string? ReturnUrl)
+        {
+            if (ModelState.IsValid)
+            {
+                //PasswordSignInAsync : kiểm tra thông tin đăng nhập
+                var result = await signInManager.PasswordSignInAsync(model.Email, model.Password,
+                                                            model.RememberMe, lockoutOnFailure: false);
+                if (result.Succeeded)
+                {
+                    //IsLocalUrl() : kiểm tra xem một URL có phải là một URL nội bộ hay không
+                    if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
+                    {
+                        return Redirect(ReturnUrl);
+                    }
+                    else
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                }
+
+                if (result.RequiresTwoFactor)
+                {
+                    // Handle two factor authentication case
+                }
+
+                if (result.IsLockedOut)
+                {
+                    // Handle lockout scenario
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt");
+                    return View(model);
+                }
+            }
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Logout()
+        {
+            //SignOutAsync : xoá thông tin user
+            await signInManager.SignOutAsync();
+            return RedirectToAction("index", "home");
         }
     }
 }
