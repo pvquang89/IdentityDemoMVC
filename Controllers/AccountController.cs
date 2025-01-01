@@ -111,5 +111,19 @@ namespace IdentityDemo.Controllers
             await signInManager.SignOutAsync();
             return RedirectToAction("index", "home");
         }
+
+
+        [AllowAnonymous]
+        [AcceptVerbs("GET", "POST")] //chấp nhận cả 2 phương thức
+        public async Task<IActionResult> IsEmailAvailable(string Email)
+        {
+          var user = await userManager.FindByEmailAsync(Email);
+            if (user == null)
+                return Json(true);
+            else
+                return Json($"Email {Email} is already in use.");
+        }
+
+
     }
 }
