@@ -7,10 +7,10 @@ namespace IdentityDemo.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly UserManager<IdentityUser> userManager;
-        private readonly SignInManager<IdentityUser> signInManager;
-        public AccountController(UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager)
+        private readonly UserManager<ApplicationUser> userManager;
+        private readonly SignInManager<ApplicationUser> signInManager;
+        public AccountController(UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
@@ -29,10 +29,12 @@ namespace IdentityDemo.Controllers
             if (ModelState.IsValid)
             {
                 //IdentityUser : class đại diện cho user 
-                var user = new IdentityUser
+                var user = new ApplicationUser
                 {
                     UserName = model.Email,
-                    Email = model.Email
+                    Email = model.Email,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
                     //không nên gán password ở đây vì ko được hash
                 };
                 // CreateAsync: tạo user mới và hash password, trả về kiểu IdentityResult

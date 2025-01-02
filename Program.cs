@@ -11,7 +11,7 @@ builder.Services.AddControllersWithViews();
 
 //Configuration Identity Services
 //AddIdentity() : phương thức dùng để cấu hình và thiết lập identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     //cấu hình tuỳ chỉnh yêu cầu password
     options.Password.RequireNonAlphanumeric = false;     // Không cần ký tự đặc biệt
