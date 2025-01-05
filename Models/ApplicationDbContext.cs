@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IdentityDemo.Models
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+
+    //tham số cuối cùng string : đại diện cho kdl của khoá chính được dùng trong 2 class 
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser,ApplicationRole,string>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
 
         }
-
-
     }
 }

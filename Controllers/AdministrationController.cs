@@ -9,8 +9,8 @@ namespace IdentityDemo.Controllers
     public class AdministrationController : Controller
     {
 
-        private readonly RoleManager<IdentityRole> _roleManager;
-        public AdministrationController(RoleManager<IdentityRole> roleManager)
+        private readonly RoleManager<ApplicationRole> _roleManager;
+        public AdministrationController(RoleManager<ApplicationRole> roleManager)
         {
             _roleManager = roleManager;
         }
@@ -35,9 +35,10 @@ namespace IdentityDemo.Controllers
                 else
                 {
                     //tạo 1 đối tượng role
-                    IdentityRole identityRole = new IdentityRole
+                    ApplicationRole identityRole = new ApplicationRole
                     {
-                        Name = roleModel?.RoleName
+                        Name = roleModel?.RoleName,
+                        Description = roleModel?.Description
                     };
 
                     //identityResult : class cho biết thao tác có thành công hay không 
@@ -60,7 +61,7 @@ namespace IdentityDemo.Controllers
         [HttpGet]
         public async Task<IActionResult> ListRoles()
         {
-            List<IdentityRole> roles = await _roleManager.Roles.ToListAsync();
+            List<ApplicationRole> roles = await _roleManager.Roles.ToListAsync();
             return View(roles);
         }
 
@@ -96,6 +97,7 @@ namespace IdentityDemo.Controllers
                 else
                 {
                     role.Name = model.RoleName;
+                    role.Description = model.Description;
                     //update
                     var result = await _roleManager.UpdateAsync(role);
                     if (result.Succeeded)
@@ -118,7 +120,7 @@ namespace IdentityDemo.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteRole(string roleId)
         {
-            IdentityRole role = await _roleManager.FindByIdAsync(roleId);
+            var role = await _roleManager.FindByIdAsync(roleId);
             if(role == null)
             {
                 ViewBag.ErrorMessage = "Cannot be found this role id";

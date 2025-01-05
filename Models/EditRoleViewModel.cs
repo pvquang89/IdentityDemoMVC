@@ -8,5 +8,7 @@ namespace IdentityDemo.Models
         public string Id { get; set; }
         [Required(ErrorMessage = "Role Name is Required")]
         public string RoleName { get; set; }
+
+        public string? Description { get; set; }
     }
 }
