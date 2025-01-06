@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace IdentityDemo.Models
+namespace IdentityDemo.Models.RoleVM
 {
     public class EditRoleViewModel
     {
@@ -10,5 +10,7 @@ namespace IdentityDemo.Models
         public string RoleName { get; set; }
 
         public string? Description { get; set; }
+
+        public List<string>? Users { get; set; }
     }
 }

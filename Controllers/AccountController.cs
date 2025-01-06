@@ -1,4 +1,5 @@
 ﻿using IdentityDemo.Models;
+using IdentityDemo.Models.LoginVM;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

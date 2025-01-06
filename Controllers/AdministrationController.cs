@@ -1,8 +1,10 @@
 ﻿using IdentityDemo.Models;
+using IdentityDemo.Models.RoleVM;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace IdentityDemo.Controllers
 {
@@ -10,9 +12,11 @@ namespace IdentityDemo.Controllers
     {
 
         private readonly RoleManager<ApplicationRole> _roleManager;
-        public AdministrationController(RoleManager<ApplicationRole> roleManager)
+        private readonly UserManager<ApplicationUser> _userManager;
+        public AdministrationController(RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager)
         {
             _roleManager = roleManager;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -68,17 +72,29 @@ namespace IdentityDemo.Controllers
         [HttpGet]
         public async Task<IActionResult> EditRole(string roleId)
         {
-            IdentityRole role = await _roleManager.FindByIdAsync(roleId);
+            var role = await _roleManager.FindByIdAsync(roleId);
             if (role == null)
             {
-                return NotFound();
+                return View("Error");
             }
-
+            //tạo đối tươngk EidtRoleViewModel để hiện dữ liệu
             var model = new EditRoleViewModel
             {
                 Id = roleId,
-                RoleName = role.Name
+                RoleName = role.Name,
+                Description = role.Description,
+                Users = new List<string>()
             };
+
+            //check list user có user nào thuộc role hiện tại 
+            foreach (var user in _userManager.Users.ToList())
+            {
+                if (await _userManager.IsInRoleAsync(user, role.Name))
+                {
+                    //nếu đúng thì add vào list
+                    model.Users.Add(user.UserName);
+                }
+            }
             return View(model);
         }
 
@@ -92,7 +108,7 @@ namespace IdentityDemo.Controllers
                 {
                     // Handle the scenario when the role is not found
                     ViewBag.ErrorMessage = $"Role with Id = {model.Id} cannot be found";
-                    return View("NotFound");
+                    return View("Error");
                 }
                 else
                 {
@@ -121,7 +137,7 @@ namespace IdentityDemo.Controllers
         public async Task<IActionResult> DeleteRole(string roleId)
         {
             var role = await _roleManager.FindByIdAsync(roleId);
-            if(role == null)
+            if (role == null)
             {
                 ViewBag.ErrorMessage = "Cannot be found this role id";
                 return BadRequest();
@@ -131,11 +147,95 @@ namespace IdentityDemo.Controllers
             {
                 return RedirectToAction("ListRoles");
             }
-            foreach(var error in result.Errors)
+            foreach (var error in result.Errors)
             {
                 ModelState.AddModelError("", error.Description);
             }
             return View("ListRoles", await _roleManager.Roles.ToListAsync());
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> EditUsersInRole(string roleId)
+        {
+            ViewBag.RoleId = roleId;
+            var role = await _roleManager.FindByIdAsync(roleId);
+            if (role == null)
+            {
+                ViewBag.ErrorMessage = $"Role with Id = {roleId} cannot be found";
+                return View("NotFound");
+            }
+
+            ViewBag.RoleName = role.Name;
+            //tạo list để chứa UserRoleViewModel hiện thị lên view
+            var model = new List<UserRoleViewModel>();
+
+            //
+            foreach (var user in _userManager.Users.ToList())
+            {
+                //tạo đối tượng để thêm vào list bên trên
+                var userRoleViewModel = new UserRoleViewModel
+                {
+                    UserId = user.Id,
+                    UserName = user.UserName
+                };
+
+                //check user hiện tại đã nằm trong role hay chưa
+                if (await _userManager.IsInRoleAsync(user, role.Name))
+                {
+                    userRoleViewModel.IsSelected = true;
+                }
+                else
+                {
+                    userRoleViewModel.IsSelected = false;
+                }
+                model.Add(userRoleViewModel);
+            }
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditUsersInRole(List<UserRoleViewModel> model, string roleId)
+        {
+            var role = await _roleManager.FindByIdAsync(roleId);
+            if (role == null)
+            {
+                ViewBag.ErrorMessage = $"Role with Id = {roleId} cannot be found";
+                return View("NotFound");
+            }
+
+            for (int i = 0; i < model.Count; i++)
+            {
+                var user = await _userManager.FindByIdAsync(model[i].UserId);
+
+                IdentityResult? result;
+                //nếu đã đc chọn và user không thuộc role hiện tại
+                if (model[i].IsSelected && !(await _userManager.IsInRoleAsync(user,role.Name)))
+                {
+                    result = await  _userManager.AddToRoleAsync(user, role.Name);
+                }
+                //nếu không được chọn và user đang thuộc role hiện tại
+                else if (!model[i].IsSelected && await _userManager.IsInRoleAsync(user, role.Name))
+                {
+                    result = await _userManager.RemoveFromRoleAsync(user, role.Name);
+                }
+                else
+                {
+                    //nếu trạng thái user ko có j thay đổi, tiếp tục loop
+                    continue;
+                }
+
+                //check đã thêm hoặc xoá thành công (ko cần thiết lắm)
+                if (result.Succeeded)
+                {
+                    if (i < (model.Count - 1))
+                        continue;
+                    else
+                        return RedirectToAction("EditRole", new { roleId = roleId });
+                }
+            }
+            //vì EditRole() có tham số nên cần tham số thứ 2
+            return RedirectToAction("EditRole", new { roleId = roleId });
         }
     }
 }
