@@ -127,6 +127,12 @@ namespace IdentityDemo.Controllers
                 return Json($"Email {Email} is already in use.");
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
 
     }
 }

@@ -24,6 +24,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     //Mặc định nếu ko đặt giá trị LoginPath là action Login trong Account controller
     options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
 //Configure Entity Framework Core

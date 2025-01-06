@@ -1,5 +1,6 @@
 ﻿using IdentityDemo.Models;
 using IdentityDemo.Models.RoleVM;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -8,6 +9,7 @@ using System.Linq.Expressions;
 
 namespace IdentityDemo.Controllers
 {
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class AdministrationController : Controller
     {
 
@@ -236,6 +238,13 @@ namespace IdentityDemo.Controllers
             }
             //vì EditRole() có tham số nên cần tham số thứ 2
             return RedirectToAction("EditRole", new { roleId = roleId });
+        }
+
+        [HttpGet]
+        public IActionResult ListUsers()
+        {
+            var users = _userManager.Users;
+            return View(users);
         }
     }
 }
