@@ -1,4 +1,5 @@
 ﻿using IdentityDemo.Models;
+using IdentityDemo.Models.Claims;
 using IdentityDemo.Models.RoleVM;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using System.Security.Claims;
 
 namespace IdentityDemo.Controllers
 {
@@ -212,9 +214,9 @@ namespace IdentityDemo.Controllers
 
                 IdentityResult? result;
                 //nếu đã đc chọn và user không thuộc role hiện tại
-                if (model[i].IsSelected && !(await _userManager.IsInRoleAsync(user,role.Name)))
+                if (model[i].IsSelected && !(await _userManager.IsInRoleAsync(user, role.Name)))
                 {
-                    result = await  _userManager.AddToRoleAsync(user, role.Name);
+                    result = await _userManager.AddToRoleAsync(user, role.Name);
                 }
                 //nếu không được chọn và user đang thuộc role hiện tại
                 else if (!model[i].IsSelected && await _userManager.IsInRoleAsync(user, role.Name))
@@ -246,5 +248,156 @@ namespace IdentityDemo.Controllers
             var users = _userManager.Users;
             return View(users);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> EditUser(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            //Check if User Exists in the Database
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"User with Id = {userId} cannot be found";
+                return NotFound();
+            }
+
+            //lấy list claims
+            var userClaims = await _userManager.GetClaimsAsync(user);
+            //lấy list roles
+            var userRoles = await _userManager.GetRolesAsync(user);
+
+            var model = new EditUserViewModel
+            {
+                Id = user.Id,
+                Email = user.Email,
+                UserName = user.UserName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                //vì userClaims là kiểu claims lên phải chuyển từng phần tử sang string
+                Claims = userClaims.Select(c => c.Value).ToList(),
+                //roles không cần vì userRoles đã là kiểu string
+                Roles = userRoles
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditUser(EditUserViewModel model)
+        {
+            var user = await _userManager.FindByIdAsync(model.Id);
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"User with Id = {model.Id} cannot be found";
+                return View("NotFound");
+            }
+            else
+            {
+                user.Email = model.Email;
+                user.UserName = model.UserName;
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+
+                //update 
+                var result = await _userManager.UpdateAsync(user);
+
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("ListUsers");
+                }
+                else
+                {
+                    //In case any error, stay in the same view and show the model validation error
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError("", error.Description);
+                    }
+                }
+                return View(model);
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> ManageUserClaims(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"User with Id = {userId} cannot be found";
+                return View("NotFound");
+            }
+
+            ViewBag.UserName = user.UserName;
+
+            //
+            var model = new UserClaimsViewModel
+            {
+                UserId = userId
+            };
+
+            //
+            var existingUserClaims = await _userManager.GetClaimsAsync(user);
+            //
+            foreach (var claim in ClaimsStore.GetAllClaims())
+            {
+                //tạo obj UserClaim
+                UserClaim userClaim = new UserClaim
+                {
+                    ClaimType = claim.Type
+                };
+
+                //check claim của user có giống với claim trong list được cung cấp hay không 
+                if (existingUserClaims.Any(c => c.Type == claim.Type))
+                {
+                    //nếu giống, đặt trạng thái cho checkbox là true
+                    userClaim.IsSelected = true;
+                }
+                // thêm obj userClaim vừa được tạo vào danh sách claim để hiện thị trên view
+                model.Claims.Add(userClaim);
+            }
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ManageUserClaims(UserClaimsViewModel model)
+        {
+            var user = await _userManager.FindByIdAsync(model.UserId);
+
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"User with Id = {model.UserId} cannot be found";
+                return View("NotFound");
+            }
+
+            //lấy claims của user và xoá 
+            var claims = await _userManager.GetClaimsAsync(user);
+            var result = await _userManager.RemoveClaimsAsync(user, claims);
+
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "Cannot remove user existing claims");
+                return View(model);
+            }
+
+            //lấy ra các claims đã chọn trên ui
+            var allSelectClaims = model.Claims.Where(c => c.IsSelected) //lọc ra các claims được chọn
+                                .Select(c => new Claim(c.ClaimType, c.ClaimType)) //tạo obj Claim từ các claim được chọn
+                                .ToList();
+
+            //check nếu có bất kì claims đượp chọn 
+            if (allSelectClaims.Any())
+            {
+                //thì thêm vào 
+                result = await _userManager.AddClaimsAsync(user, allSelectClaims);
+
+                if (!result.Succeeded)
+                {
+                    ModelState.AddModelError("", "Cannot add selected claims to user");
+                    return View(model);
+                }
+            }
+            return RedirectToAction("EditUser", new { userId = model.UserId });
+        }
+
     }
 }
