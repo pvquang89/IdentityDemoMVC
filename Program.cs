@@ -27,6 +27,16 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+//Configure policy 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CreateRolePolicy",
+        policy => policy.RequireClaim("Create Role"));
+
+    options.AddPolicy("DeleteRolePolicy",
+        policy => policy.RequireClaim("Delete Role"));
+});
+
 //Configure Entity Framework Core
 var connectionString = builder.Configuration.GetConnectionString("SQLServerIdentityConnection") ?? throw new InvalidOperationException("Connection string 'SQLServerIdentityConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -43,7 +53,7 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
+                                                                                                                                        
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 

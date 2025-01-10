@@ -30,6 +30,7 @@ namespace IdentityDemo.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "CreateRolePolicy")]
         public async Task<IActionResult> CreateRole(CreateRoleViewModel roleModel)
         {
             if (ModelState.IsValid)
@@ -138,6 +139,7 @@ namespace IdentityDemo.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy ="DeleteRolePolicy")]
         public async Task<IActionResult> DeleteRole(string roleId)
         {
             var role = await _roleManager.FindByIdAsync(roleId);
